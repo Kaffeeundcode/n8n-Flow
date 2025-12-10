@@ -1,0 +1,114 @@
+{
+    "name": "04_Critical_App_Install_Monitor",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 4
+                        }
+                    ]
+                }
+            },
+            "name": "Schedule",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps/YOUR_CRITICAL_APP_ID/deviceStatuses?$filter=installState eq 'failed'",
+                "options": {}
+            },
+            "name": "Get Failed Installs",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.value.length }}",
+                            "operation": "larger",
+                            "value2": 5
+                        }
+                    ]
+                }
+            },
+            "name": "Check Failure Threshold",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🔴 **Critical App Install Issue**\nThe critical app (ID: YOUR_CRITICAL_APP_ID) has failed on {{ $json.value.length }} devices in the last check."
+            },
+            "name": "Alert IT Support",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "Schedule": {
+            "main": [
+                [
+                    {
+                        "node": "Get Failed Installs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Failed Installs": {
+            "main": [
+                [
+                    {
+                        "node": "Check Failure Threshold",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Failure Threshold": {
+            "main": [
+                [
+                    {
+                        "node": "Alert IT Support",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

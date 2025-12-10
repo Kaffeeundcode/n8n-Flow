@@ -1,0 +1,153 @@
+{
+  "name": "01_Intune_Compliance_Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "name": "Schedule",
+      "type": "n8n-nodes-base.schedule",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftGraphOAuth2Api",
+        "requestMethod": "GET",
+        "url": "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=complianceState eq 'nonCompliant'",
+        "options": {}
+      },
+      "name": "Get NonCompliant Devices",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "microsoftGraphOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Microsoft Graph Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const devices = items[0].json.value;\nconst summary = devices.map(d => `- ${d.deviceName} (${d.userPrincipalName}): ${d.complianceState}`).join('\\n');\nreturn [{ json: { summary, count: devices.length } }];"
+      },
+      "name": "Format Report",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.count }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "If Devices Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "message": "=⚠️ **Intune Compliance Alert** ⚠️\nFound {{ $json.count }} non-compliant devices:\n\n{{ $json.summary }}"
+      },
+      "name": "Send Teams Alert",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "No Action Needed",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Get NonCompliant Devices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get NonCompliant Devices": {
+      "main": [
+        [
+          {
+            "node": "Format Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Report": {
+      "main": [
+        [
+          {
+            "node": "If Devices Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Devices Found": {
+      "main": [
+        [
+          {
+            "node": "Send Teams Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Action Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

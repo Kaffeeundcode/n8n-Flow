@@ -1,0 +1,157 @@
+{
+    "name": "07_Auto_Tagging_By_Department",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 12
+                        }
+                    ]
+                }
+            },
+            "name": "Run Twice Daily",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$select=id,userPrincipalName",
+                "options": {}
+            },
+            "name": "Get All Devices",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.userPrincipalName }}?$select=department",
+                "options": {}
+            },
+            "name": "Get User Dept",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.department }}",
+                            "operation": "equal",
+                            "value2": "Sales"
+                        }
+                    ]
+                }
+            },
+            "name": "Is Sales?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "POST",
+                "url": "=https://graph.microsoft.com/v1.0/deviceManagement/managedDevices('{{ $node[\"Get All Devices\"].json.id }}')/updateDeviceAccount",
+                "options": {},
+                "bodyParametersJson": "{ \"scopeTags\": [ \"SALES_TAG_ID\" ] }"
+            },
+            "name": "Tag Device Sales",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                1050,
+                200
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Run Twice Daily": {
+            "main": [
+                [
+                    {
+                        "node": "Get All Devices",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get All Devices": {
+            "main": [
+                [
+                    {
+                        "node": "Get User Dept",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get User Dept": {
+            "main": [
+                [
+                    {
+                        "node": "Is Sales?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Sales?": {
+            "main": [
+                [
+                    {
+                        "node": "Tag Device Sales",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

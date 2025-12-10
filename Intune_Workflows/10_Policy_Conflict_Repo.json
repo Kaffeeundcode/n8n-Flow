@@ -1,0 +1,156 @@
+{
+    "name": "10_Policy_Conflict_Repo",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": 1,
+                            "triggerAtHour": 6
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Conflict Scan",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/v1.0/deviceManagement/deviceConfigurations?$expand=deviceStatusOverview",
+                "options": {}
+            },
+            "name": "Get Config Policies",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const policies = items[0].json.value;\nconst conflicts = policies.filter(p => p.deviceStatusOverview.conflictCount > 0);\n\nif (conflicts.length === 0) return [];\n\nconst report = conflicts.map(c => `Policy '${c.displayName}' has ${c.deviceStatusOverview.conflictCount} conflicts.`).join('\\n');\nreturn [{ json: { report, count: conflicts.length } }];"
+            },
+            "name": "Filter Conflicts",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.count }}",
+                            "operation": "larger",
+                            "value2": 0
+                        }
+                    ]
+                }
+            },
+            "name": "If Conflicts Exist",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "content": "=**Intune Policy Conflicts Detected**\n\n{{ $json.report }}",
+                "options": {}
+            },
+            "name": "Save to File",
+            "type": "n8n-nodes-base.writeBinaryFile",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=⚠️ Detected {{ $json.count }} policies with conflicts. Please check the report."
+            },
+            "name": "Notify Admin",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Conflict Scan": {
+            "main": [
+                [
+                    {
+                        "node": "Get Config Policies",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Config Policies": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Conflicts",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Conflicts": {
+            "main": [
+                [
+                    {
+                        "node": "If Conflicts Exist",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If Conflicts Exist": {
+            "main": [
+                [
+                    {
+                        "node": "Save to File",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Notify Admin",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

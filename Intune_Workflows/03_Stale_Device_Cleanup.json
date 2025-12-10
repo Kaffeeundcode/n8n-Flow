@@ -1,0 +1,131 @@
+{
+    "name": "03_Stale_Device_Cleanup",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtHour": 9
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Schedule",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "const date = new Date();\ndate.setDate(date.getDate() - 90);\nreturn [{ json: { cutoffDate: date.toISOString() } }];"
+            },
+            "name": "Calculate Cutoff Date",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "=https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=lastSyncDateTime lt '{{ $json.cutoffDate }}'",
+                "options": {}
+            },
+            "name": "Find Stale Devices",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const stale = items[0].json.value;\nconst report = stale.map(d => `- ${d.deviceName} (Last Sync: ${d.lastSyncDateTime})`).join('\\n');\nreturn [{ json: { report, count: stale.length } }];"
+            },
+            "name": "Generate Report",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "fromEmail": "admin@yourorg.com",
+                "toEmail": "it-ops@yourorg.com",
+                "subject": "⚠️ Stale Intune Devices Report",
+                "text": "=The following {{ $json.count }} devices have not synced in 90 days:\n\n{{ $json.report }}"
+            },
+            "name": "Send Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Schedule": {
+            "main": [
+                [
+                    {
+                        "node": "Calculate Cutoff Date",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Calculate Cutoff Date": {
+            "main": [
+                [
+                    {
+                        "node": "Find Stale Devices",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Find Stale Devices": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Report": {
+            "main": [
+                [
+                    {
+                        "node": "Send Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

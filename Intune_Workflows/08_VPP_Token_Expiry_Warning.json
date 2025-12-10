@@ -1,0 +1,105 @@
+{
+    "name": "08_VPP_Token_Expiry_Warning",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "days"
+                        }
+                    ]
+                }
+            },
+            "name": "Daily Check",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/v1.0/deviceAppManagement/vppTokens",
+                "options": {}
+            },
+            "name": "Get VPP Tokens",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const tokens = items[0].json.value;\nconst now = new Date();\nconst thirtyDays = 30 * 24 * 60 * 60 * 1000;\n\nreturn tokens.filter(t => {\n  const expiry = new Date(t.expirationDateTime);\n  return (expiry - now) < thirtyDays;\n}).map(t => ({ json: t }));"
+            },
+            "name": "Filter Expiring",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=⚠️ **VPP Token Expiring Soon** ⚠️\nToken Name: {{ $json.displayName }}\nExpires: {{ $json.expirationDateTime }}\n\nPlease renew immediately in Apple Business Manager."
+            },
+            "name": "Slack Alert",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Daily Check": {
+            "main": [
+                [
+                    {
+                        "node": "Get VPP Tokens",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get VPP Tokens": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Expiring",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Expiring": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

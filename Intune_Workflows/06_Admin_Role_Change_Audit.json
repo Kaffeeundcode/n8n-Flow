@@ -1,0 +1,76 @@
+{
+    "name": "06_Admin_Role_Change_Audit",
+    "nodes": [
+        {
+            "parameters": {
+                "pollInterval": "5m",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "url": "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits?$filter=activityDisplayName eq 'Add member to role' and result eq 'success'",
+                "options": {}
+            },
+            "name": "Poll Audit Logs",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                250,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const criticalRoles = ['Global Administrator', 'Intune Administrator', 'Security Administrator'];\nreturn items.filter(item => {\n  const roles = item.json.targetResources.filter(r => r.type === 'Role');\n  return roles.some(r => criticalRoles.includes(r.displayName));\n});"
+            },
+            "name": "Filter Critical Roles",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🚨 **Security Alert** 🚨\nA user was added to a critical role:\n\n**Actor:** {{ $json.initiatedBy.user.displayName }}\n**Target:** {{ $json.targetResources[0].userPrincipalName }}\n**Role:** {{ $json.targetResources[0].modifiedProperties[1].newValue }}"
+            },
+            "name": "Security Alert",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Poll Audit Logs": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Critical Roles",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Critical Roles": {
+            "main": [
+                [
+                    {
+                        "node": "Security Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

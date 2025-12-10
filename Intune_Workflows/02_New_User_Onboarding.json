@@ -1,0 +1,155 @@
+{
+    "name": "02_New_User_Onboarding",
+    "nodes": [
+        {
+            "parameters": {
+                "pollInterval": "10m",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "url": "https://graph.microsoft.com/v1.0/users?$filter=createdDateTime ge {{ $now.minus('20m').toISO() }}",
+                "options": {}
+            },
+            "name": "Poll New Users",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                250,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const newUsers = items[0].json.value;\nreturn newUsers.map(user => ({ json: user }));"
+            },
+            "name": "Split Users",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "POST",
+                "url": "https://graph.microsoft.com/v1.0/users/{{ $json.id }}/assignLicense",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "jsonParameters": true,
+                "bodyParametersJson": "{\n  \"addLicenses\": [\n    {\n      \"skuId\": \"YOUR_LICENSE_SKU_ID\"\n    }\n  ],\n  \"removeLicenses\": []\n}"
+            },
+            "name": "Assign E5 License",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                650,
+                200
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "POST",
+                "url": "https://graph.microsoft.com/v1.0/groups/YOUR_INTUNE_GROUP_ID/members/$ref",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "jsonParameters": true,
+                "bodyParametersJson": "{\n  \"@odata.id\": \"https://graph.microsoft.com/v1.0/directoryObjects/{{ $json.id }}\"\n}"
+            },
+            "name": "Add to Intune Group",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                650,
+                400
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🎉 Onboarded **{{ $json.displayName }}**\n- Assigned License\n- Added to Intune Baseline Group"
+            },
+            "name": "Notify Teams",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Poll New Users": {
+            "main": [
+                [
+                    {
+                        "node": "Split Users",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Users": {
+            "main": [
+                [
+                    {
+                        "node": "Assign E5 License",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Add to Intune Group",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Assign E5 License": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Teams",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Add to Intune Group": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Teams",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
