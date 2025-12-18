@@ -1,0 +1,114 @@
+{
+    "name": "15_Risky_Users_Alert",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 4
+                        }
+                    ]
+                }
+            },
+            "name": "4 Hour Check",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/v1.0/identityProtection/riskyUsers?$filter=riskLevel eq 'high'",
+                "options": {}
+            },
+            "name": "Get Risky Users",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.value.length }}",
+                            "operation": "larger",
+                            "value2": 0
+                        }
+                    ]
+                }
+            },
+            "name": "If High Risk Found",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🚨 **HIGH RISK USERS DETECTED** 🚨\nThe following users are flagged as High Risk:\n\n{{ $json.value.map(u => u.userPrincipalName).join(', ') }}\n\nPlease investigate immediately."
+            },
+            "name": "Urgent Alert",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "4 Hour Check": {
+            "main": [
+                [
+                    {
+                        "node": "Get Risky Users",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Risky Users": {
+            "main": [
+                [
+                    {
+                        "node": "If High Risk Found",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If High Risk Found": {
+            "main": [
+                [
+                    {
+                        "node": "Urgent Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

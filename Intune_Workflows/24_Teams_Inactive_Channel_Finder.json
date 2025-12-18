@@ -1,0 +1,83 @@
+{
+    "name": "24_Teams_Inactive_Channel_Finder",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "months",
+                            "monthsInterval": 1
+                        }
+                    ]
+                }
+            },
+            "name": "Monthly Scan",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/beta/reports/getTeamsUserActivityUserDetail(period='D90')",
+                "options": {}
+            },
+            "name": "Get Activity Report",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "Note: Direct API for 'Channel Inactivity' is tricky. This placeholder uses the Report Root to get user activity. Real cleanup requires deeper logic."
+            },
+            "name": "Placeholder Logic",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Monthly Scan": {
+            "main": [
+                [
+                    {
+                        "node": "Get Activity Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Activity Report": {
+            "main": [
+                [
+                    {
+                        "node": "Placeholder Logic",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

@@ -1,0 +1,114 @@
+{
+    "name": "29_Failed_Logins_Monitor",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 15
+                        }
+                    ]
+                }
+            },
+            "name": "15m Check",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/v1.0/auditLogs/signIns?$filter=status/errorCode ne 0 and createdDateTime ge {{ $now.minus('15m').toISO() }}",
+                "options": {}
+            },
+            "name": "Get Failed Logins",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.value.length }}",
+                            "operation": "larger",
+                            "value2": 50
+                        }
+                    ]
+                }
+            },
+            "name": "If > 50 Failures",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🚨 **Brute Force Detection?**\nOver 50 failed logins detected in the last 15 minutes."
+            },
+            "name": "Security Alert",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "15m Check": {
+            "main": [
+                [
+                    {
+                        "node": "Get Failed Logins",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Failed Logins": {
+            "main": [
+                [
+                    {
+                        "node": "If > 50 Failures",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If > 50 Failures": {
+            "main": [
+                [
+                    {
+                        "node": "Security Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

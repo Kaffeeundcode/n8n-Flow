@@ -1,0 +1,107 @@
+{
+    "name": "18_Windows_Update_Status_Report",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": 2,
+                            "triggerAtHour": 10
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Check",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/beta/deviceManagement/deviceWindowsQualityUpdateStates",
+                "options": {}
+            },
+            "name": "Get Update States",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const states = items[0].json.value;\n// Look for devices with 'error' or 'pending' for too long\nconst problematic = states.filter(s => s.status === 'error' || s.status === 'failed');\nreturn [{ json: { count: problematic.length, details: problematic } }];"
+            },
+            "name": "Filter Errors",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=⚠️ **Windows Update Issues**\n{{ $json.count }} devices reported update errors."
+            },
+            "name": "Update Alert",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Check": {
+            "main": [
+                [
+                    {
+                        "node": "Get Update States",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Update States": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Errors",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Errors": {
+            "main": [
+                [
+                    {
+                        "node": "Update Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

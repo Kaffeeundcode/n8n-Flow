@@ -1,0 +1,111 @@
+{
+    "name": "21_Detected_Apps_ShadowIT",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": 3
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Audit",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/beta/deviceManagement/detectedApps?$filter=deviceCount gt 5",
+                "options": {}
+            },
+            "name": "Get Detected Apps",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "toFile",
+                "fileFormat": "csv",
+                "options": {}
+            },
+            "name": "Export CSV",
+            "type": "n8n-nodes-base.spreadsheetFile",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "fromEmail": "it-audit@yourdomain.com",
+                "toEmail": "cio@yourdomain.com",
+                "subject": "Shadow IT Report",
+                "text": "Attached is the list of apps detected on more than 5 devices.",
+                "attachments": "data"
+            },
+            "name": "Email CIO",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Audit": {
+            "main": [
+                [
+                    {
+                        "node": "Get Detected Apps",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Detected Apps": {
+            "main": [
+                [
+                    {
+                        "node": "Export CSV",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Export CSV": {
+            "main": [
+                [
+                    {
+                        "node": "Email CIO",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

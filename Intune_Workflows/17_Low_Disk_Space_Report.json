@@ -1,0 +1,107 @@
+{
+    "name": "17_Low_Disk_Space_Report",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": 1,
+                            "triggerAtHour": 9
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Schedule",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/beta/deviceManagement/managedDevices?$select=deviceName,userPrincipalName,hardwareInformation",
+                "options": {}
+            },
+            "name": "Get Device HW Info",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const devices = items[0].json.value;\nconst lowDisk = devices.filter(d => {\n  if (!d.hardwareInformation || !d.hardwareInformation.totalStorageSpace || !d.hardwareInformation.freeStorageSpace) return false;\n  const total = d.hardwareInformation.totalStorageSpace;\n  const free = d.hardwareInformation.freeStorageSpace;\n  return (free / total) < 0.1;\n});\n\nreturn [{ json: { count: lowDisk.length, report: lowDisk.map(d => `${d.deviceName} (${d.userPrincipalName})`).join('\\n') } }];"
+            },
+            "name": "Filter Low Disk",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=💾 **Low Disk Space Report**\n{{ $json.count }} devices have less than 10% free space:\n\n{{ $json.report }}"
+            },
+            "name": "Send Teams Report",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Schedule": {
+            "main": [
+                [
+                    {
+                        "node": "Get Device HW Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Device HW Info": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Low Disk",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Low Disk": {
+            "main": [
+                [
+                    {
+                        "node": "Send Teams Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

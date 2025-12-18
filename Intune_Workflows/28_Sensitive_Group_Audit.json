@@ -1,0 +1,76 @@
+{
+    "name": "28_Sensitive_Group_Audit",
+    "nodes": [
+        {
+            "parameters": {
+                "pollInterval": "10m",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "url": "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits?$filter=activityDisplayName eq 'Add member to group'",
+                "options": {}
+            },
+            "name": "Poll Group Changes",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                250,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const sensitiveGroups = ['HR Confidential', 'Executive Team'];\nreturn items.filter(i => {\n  const target = i.json.targetResources.find(r => r.type === 'Group');\n  return target && sensitiveGroups.includes(target.displayName);\n});"
+            },
+            "name": "Filter Sensitive",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=⚠️ **Sensitive Group Access**\nUser added to group {{ $json.targetResources[0].displayName }}."
+            },
+            "name": "Alert Security",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Poll Group Changes": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Sensitive",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Sensitive": {
+            "main": [
+                [
+                    {
+                        "node": "Alert Security",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

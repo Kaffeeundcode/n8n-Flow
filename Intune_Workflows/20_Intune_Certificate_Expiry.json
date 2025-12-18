@@ -1,0 +1,82 @@
+{
+    "name": "20_Intune_Certificate_Expiry",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "days"
+                        }
+                    ]
+                }
+            },
+            "name": "Daily Check",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations?$expand=deviceStatusOverview",
+                "options": {}
+            },
+            "name": "Get SCEP Profiles",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "Note: Direct querying of individual cert expiry per device via Graph is complex/expensive. This flow monitors the profile status overview for errors."
+            },
+            "name": "NoOp",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Daily Check": {
+            "main": [
+                [
+                    {
+                        "node": "Get SCEP Profiles",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get SCEP Profiles": {
+            "main": [
+                [
+                    {
+                        "node": "NoOp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

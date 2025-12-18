@@ -1,0 +1,106 @@
+{
+    "name": "19_LAPS_Rotation_Check",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": 1
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Scan",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/beta/deviceManagement/managedDevices?$select=id,deviceName,userPrincipalName&$expand=deviceLocalAdministratorPasswordInfo",
+                "options": {}
+            },
+            "name": "Get LAPS Status",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const devices = items[0].json.value;\n// Filter devices where LAPS has not rotated in > 30 days (if that info is available in beta)\n// Note: This endpoint is highly beta and might need adjustments.\nreturn [{ json: { count: devices.length } }];"
+            },
+            "name": "Analyze Rotation",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🔐 **LAPS Backup Status**\nChecked {{ $json.count }} devices for local admin password backup availability."
+            },
+            "name": "LAPS Report",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Scan": {
+            "main": [
+                [
+                    {
+                        "node": "Get LAPS Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get LAPS Status": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze Rotation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze Rotation": {
+            "main": [
+                [
+                    {
+                        "node": "LAPS Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

@@ -1,0 +1,83 @@
+{
+    "name": "23_M365_Service_Health",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 30
+                        }
+                    ]
+                }
+            },
+            "name": "30m Check",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/v1.0/admin/serviceAnnouncement/issues?$filter=startDateTime ge {{ $now.minus('30m').toISO() }}",
+                "options": {}
+            },
+            "name": "Get Incidents",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🔴 **M365 Incident**\n**Service:** {{ $json.service }}\n**Title:** {{ $json.title }}\n**Impact:** {{ $json.impactDescription }}"
+            },
+            "name": "Notify Teams",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "30m Check": {
+            "main": [
+                [
+                    {
+                        "node": "Get Incidents",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Incidents": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Teams",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

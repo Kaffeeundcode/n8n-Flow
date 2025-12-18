@@ -1,0 +1,53 @@
+{
+    "name": "16_Conditional_Access_Audit",
+    "nodes": [
+        {
+            "parameters": {
+                "pollInterval": "10m",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "url": "https://graph.microsoft.com/v1.0/auditLogs/directoryAudits?$filter=activityDisplayName eq 'Update conditional access policy'",
+                "options": {}
+            },
+            "name": "Poll CA Changes",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                250,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=🛡️ **Conditional Access Policy Modified**\n\n**Actor:** {{ $json.initiatedBy.user.displayName }}\n**Policy:** {{ $json.targetResources[0].displayName }}\n**Time:** {{ $json.activityDateTime }}"
+            },
+            "name": "Notify Security",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Poll CA Changes": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Security",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

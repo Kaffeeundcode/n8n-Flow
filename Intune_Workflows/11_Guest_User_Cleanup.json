@@ -1,0 +1,113 @@
+{
+  "name": "11_Guest_User_Cleanup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks"
+            }
+          ]
+        }
+      },
+      "name": "Weekly Schedule",
+      "type": "n8n-nodes-base.schedule",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "microsoftGraphOAuth2Api",
+        "requestMethod": "GET",
+        "url": "=https://graph.microsoft.com/v1.0/users?$filter=userType eq 'Guest' and signInActivity/lastSignInDateTime le '{{ $now.minus('90d').toISO() }}'&$select=id,displayName,userPrincipalName,signInActivity",
+        "options": {}
+      },
+      "name": "Find Inactive Guests",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "microsoftGraphOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Microsoft Graph Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.value.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "If Guests Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "message": "=⚠️ **Inactive Guest Users (>90 days)**\nFound {{ $json.value.length }} users. Consider removing them:\n\n{{ $json.value.map(u => u.displayName).join(', ') }}"
+      },
+      "name": "Notify Admin",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Weekly Schedule": {
+      "main": [
+        [
+          {
+            "node": "Find Inactive Guests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Inactive Guests": {
+      "main": [
+        [
+          {
+            "node": "If Guests Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Guests Found": {
+      "main": [
+        [
+          {
+            "node": "Notify Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+    "name": "13_MFA_Registration_Audit",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": 1
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Audit",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "GET",
+                "url": "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails",
+                "options": {}
+            },
+            "name": "Get Registration Report",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "functionCode": "const users = items[0].json.value;\nconst nonMfa = users.filter(u => !u.isMfaRegistered);\nreturn [{ json: { count: nonMfa.length, users: nonMfa.map(u => u.userPrincipalName) } }];"
+            },
+            "name": "Filter Non-MFA",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=⚠️ **MFA Audit Report**\n{{ $json.count }} users have NOT registered for MFA yet.\n\nUsers: {{ $json.users.join(', ') }}"
+            },
+            "name": "Alert Security",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Audit": {
+            "main": [
+                [
+                    {
+                        "node": "Get Registration Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Registration Report": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Non-MFA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Non-MFA": {
+            "main": [
+                [
+                    {
+                        "node": "Alert Security",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

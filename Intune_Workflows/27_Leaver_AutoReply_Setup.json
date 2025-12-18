@@ -1,0 +1,79 @@
+{
+    "name": "27_Leaver_AutoReply_Setup",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "leaver-process",
+                "options": {}
+            },
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "microsoftGraphOAuth2Api",
+                "requestMethod": "POST",
+                "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.body.userId }}/mailboxSettings/automaticRepliesSetting",
+                "options": {},
+                "bodyParametersJson": "{\n  \"status\": \"alwaysEnabled\",\n  \"internalReplyMessage\": \"<html><body>I have left the company.</body></html>\",\n  \"externalReplyMessage\": \"<html><body>I have left the company. Please contact HR.</body></html>\"\n}"
+            },
+            "name": "Set Auto Reply",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "microsoftGraphOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Microsoft Graph Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "message": "=✅ **Leaver Processed**\nAuto-reply set for user {{ $json.body.userId }}."
+            },
+            "name": "Confirm Action",
+            "type": "n8n-nodes-base.microsoftTeams",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Set Auto Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Auto Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Confirm Action",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
