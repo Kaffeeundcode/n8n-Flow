@@ -1,0 +1,131 @@
+{
+    "name": "39_Email_Sentiment_Analyzer",
+    "nodes": [
+        {
+            "parameters": {
+                "postProcessAction": "nothing"
+            },
+            "name": "IMAP Trigger",
+            "type": "n8n-nodes-base.emailReadImap",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "credentials": {
+                "imap": {
+                    "id": "YOUR_IMAP_CREDENTIAL_ID",
+                    "name": "IMAP Account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "gpt-4-turbo-preview",
+                "prompt": {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Analyze sentiment of the email. Return only 'Positive', 'Negative', or 'Angry'."
+                        },
+                        {
+                            "role": "user",
+                            "content": "={{ $json.textPlain }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "Analyze Sentiment",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.message.content }}",
+                            "operation": "equal",
+                            "value2": "Angry"
+                        }
+                    ]
+                }
+            },
+            "name": "Is Angry?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_CHAT_ID",
+                "text": "=🚨 **Angry Customer Email**\nFrom: {{ $node[\"IMAP Trigger\"].json.from }}\nSubject: {{ $node[\"IMAP Trigger\"].json.subject }}",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "name": "Notify Support Lead",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_ID",
+                    "name": "Telegram Account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "IMAP Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze Sentiment",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze Sentiment": {
+            "main": [
+                [
+                    {
+                        "node": "Is Angry?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Angry?": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Support Lead",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

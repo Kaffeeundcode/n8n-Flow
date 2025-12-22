@@ -1,0 +1,89 @@
+{
+    "name": "37_Meeting_Summary_processor",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "process-transcript",
+                "options": {}
+            },
+            "name": "Webhook (Upload)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "model": "gpt-4-turbo-preview",
+                "prompt": {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Summarize the following meeting transcript and extract action items."
+                        },
+                        {
+                            "role": "user",
+                            "content": "={{ $json.body.transcript }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "name": "AI Summarize",
+            "type": "n8n-nodes-base.openAi",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_OPENAI_CREDENTIAL_ID",
+                    "name": "OpenAI"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "fromEmail": "bot@yourdomain.com",
+                "toEmail": "team@yourdomain.com",
+                "subject": "Meeting Summary",
+                "text": "={{ $json.message.content }}"
+            },
+            "name": "Email Summary",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook (Upload)": {
+            "main": [
+                [
+                    {
+                        "node": "AI Summarize",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI Summarize": {
+            "main": [
+                [
+                    {
+                        "node": "Email Summary",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

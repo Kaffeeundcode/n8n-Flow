@@ -1,0 +1,118 @@
+{
+    "name": "35_Dependabot_Auto_Merge",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "github-dependabot",
+                "options": {}
+            },
+            "name": "GitHub Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.body.sender.login }}",
+                            "operation": "equal",
+                            "value2": "dependabot[bot]"
+                        }
+                    ]
+                }
+            },
+            "name": "Is Dependabot?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "authentication": "accessToken",
+                "requestMethod": "POST",
+                "url": "=https://api.github.com/repos/{{ $json.body.repository.full_name }}/pulls/{{ $json.body.pull_request.number }}/reviews",
+                "options": {},
+                "bodyParametersJson": "{\"event\": \"APPROVE\"}"
+            },
+            "name": "Approve PR",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                650,
+                200
+            ],
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "YOUR_GITHUB_TOKEN",
+                    "name": "GitHub Token"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_CHAT_ID",
+                "text": "=🤖 **Dependabot Action**\nAuto-approved PR: {{ $json.body.pull_request.title }}",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "name": "Notify Telegram",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_ID",
+                    "name": "Telegram Account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "GitHub Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Is Dependabot?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Dependabot?": {
+            "main": [
+                [
+                    {
+                        "node": "Approve PR",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Approve PR": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Telegram",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

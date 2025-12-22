@@ -1,0 +1,106 @@
+{
+    "name": "33_Port_Scanner",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": 1
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Schedule",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "nc -zv your-ip-or-domain 22 3389 80 443"
+            },
+            "name": "Scan Ports",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "continueOnFail": true
+        },
+        {
+            "parameters": {
+                "functionCode": "const output = items[0].json.stderr; // nc outputs to stderr usually\nconst openPorts = [];\nif (output.includes('succeeded') || output.includes('open')) {\n  openPorts.push('Ports detected open!');\n}\nreturn [{ json: { output, open: openPorts.length > 0 } }];"
+            },
+            "name": "Analyze Results",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_CHAT_ID",
+                "text": "=🛡️ **Port Scan Results**\n\n{{ $json.output }}",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "name": "Notify Telegram",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_ID",
+                    "name": "Telegram Account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Weekly Schedule": {
+            "main": [
+                [
+                    {
+                        "node": "Scan Ports",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Scan Ports": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze Results",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze Results": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Telegram",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

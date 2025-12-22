@@ -1,0 +1,135 @@
+{
+    "name": "32_SSL_Certificate_Expiry",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks"
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Check",
+            "type": "n8n-nodes-base.schedule",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "echo | openssl s_client -servername your-website.com -connect your-website.com:443 2>/dev/null | openssl x509 -noout -enddate"
+            },
+            "name": "Get SSL Date",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "const output = items[0].json.stdout;\n// format: notAfter=MMM DD HH:MM:SS YYYY GMT\nconst dateStr = output.replace('notAfter=', '');\nconst expiryDate = new Date(dateStr);\nconst now = new Date();\nconst daysLeft = Math.floor((expiryDate - now) / (1000 * 60 * 60 * 24));\n\nreturn [{ json: { daysLeft, expiryDate: expiryDate.toISOString() } }];"
+            },
+            "name": "Calculate Days",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "number": [
+                        {
+                            "value1": "={{ $json.daysLeft }}",
+                            "operation": "smaller",
+                            "value2": 14
+                        }
+                    ]
+                }
+            },
+            "name": "If < 14 Days",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_CHAT_ID",
+                "text": "=⚠️ **SSL Expiring Soon**\nYour certificate expires in {{ $json.daysLeft }} days.",
+                "additionalFields": {
+                    "parse_mode": "Markdown"
+                }
+            },
+            "name": "Notify Telegram",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                300
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_ID",
+                    "name": "Telegram Account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Weekly Check": {
+            "main": [
+                [
+                    {
+                        "node": "Get SSL Date",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get SSL Date": {
+            "main": [
+                [
+                    {
+                        "node": "Calculate Days",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Calculate Days": {
+            "main": [
+                [
+                    {
+                        "node": "If < 14 Days",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If < 14 Days": {
+            "main": [
+                [
+                    {
+                        "node": "Notify Telegram",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

@@ -1,0 +1,83 @@
+{
+    "name": "40_PDF_Invoice_Parser",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "invoice-upload",
+                "options": {}
+            },
+            "name": "Webhook (Upload)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "json",
+                "json": "={{ $json.body.data }}",
+                "options": {}
+            },
+            "name": "AWS Textract / OCR",
+            "type": "n8n-nodes-base.awsTextract",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "notes": "Requires AWS Credentials. Simulating simple text extraction for now."
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "documentId": "YOUR_SHEET_ID",
+                "sheetName": "Invoices",
+                "columns": {
+                    "Date": "={{ $json.date }}",
+                    "Amount": "={{ $json.amount }}",
+                    "Vendor": "={{ $json.vendor }}"
+                }
+            },
+            "name": "Save to Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ],
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_GOOGLE_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Webhook (Upload)": {
+            "main": [
+                [
+                    {
+                        "node": "AWS Textract / OCR",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Textract / OCR": {
+            "main": [
+                [
+                    {
+                        "node": "Save to Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
