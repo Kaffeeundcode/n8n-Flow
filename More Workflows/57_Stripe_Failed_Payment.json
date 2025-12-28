@@ -1,0 +1,46 @@
+{
+    "name": "57_Stripe_Failed_Payment",
+    "nodes": [
+        {
+            "parameters": {
+                "events": [
+                    "invoice.payment_failed"
+                ]
+            },
+            "name": "Stripe Trigger",
+            "type": "n8n-nodes-base.stripeTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "toEmail": "{{$json[\"data\"][\"object\"][\"customer_email\"]}}",
+                "subject": "Payment Failed",
+                "text": "Please update your payment method."
+            },
+            "name": "Send Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Stripe Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Send Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

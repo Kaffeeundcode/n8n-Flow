@@ -1,0 +1,69 @@
+{
+    "name": "52_Invoice_Generator",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "new-order",
+                "options": {}
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "html": "<html><body><h1>Invoice for {{$json[\"body\"][\"customer\"]}}</h1><p>Amount: {{$json[\"body\"][\"amount\"]}}</p></body></html>",
+                "format": "pdf"
+            },
+            "name": "HTML to PDF",
+            "type": "n8n-nodes-base.htmlToPdf",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "toEmail": "{{$json[\"body\"][\"email\"]}}",
+                "subject": "Your Invoice",
+                "text": "Attached."
+            },
+            "name": "Send Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "HTML to PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTML to PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Send Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

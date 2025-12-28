@@ -1,0 +1,68 @@
+{
+    "name": "51_Feedback_Sentiment",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "feedback",
+                "options": {}
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "text": "={{$json[\"body\"][\"feedback_text\"]}}"
+            },
+            "name": "AWS Comprehend",
+            "type": "n8n-nodes-base.awsComprehend",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "sheetId": "SHEET_ID",
+                "range": "A:C",
+                "options": {}
+            },
+            "name": "Google Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "AWS Comprehend",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AWS Comprehend": {
+            "main": [
+                [
+                    {
+                        "node": "Google Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

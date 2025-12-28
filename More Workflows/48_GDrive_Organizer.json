@@ -1,0 +1,81 @@
+{
+    "name": "48_GDrive_Organizer",
+    "nodes": [
+        {
+            "parameters": {
+                "pollTimes": {
+                    "item": [
+                        {
+                            "mode": "everyMinute"
+                        }
+                    ]
+                },
+                "event": "file.created"
+            },
+            "name": "Google Drive Trigger",
+            "type": "n8n-nodes-base.googleDriveTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{$json[\"mimeType\"]}}",
+                            "value2": "application/pdf"
+                        }
+                    ]
+                }
+            },
+            "name": "IF PDF",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "move",
+                "fileId": "={{$json[\"id\"]}}",
+                "targetFolderId": "FOLDER_ID_HERE"
+            },
+            "name": "Move to Docs",
+            "type": "n8n-nodes-base.googleDrive",
+            "typeVersion": 1,
+            "position": [
+                650,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "Google Drive Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "IF PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Move to Docs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

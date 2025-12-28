@@ -1,0 +1,54 @@
+{
+    "name": "60_Weekly_Status_Request",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "weeksInterval": 1
+                        }
+                    ]
+                },
+                "triggerAtDay": [
+                    5
+                ],
+                "triggerAtHour": 9
+            },
+            "name": "Weekly Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "channelId": "general",
+                "text": "@channel Please submit your weekly status: https://forms.gle/..."
+            },
+            "name": "Slack",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Slack",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

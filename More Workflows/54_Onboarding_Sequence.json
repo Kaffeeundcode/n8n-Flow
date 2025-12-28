@@ -1,0 +1,71 @@
+{
+    "name": "54_Onboarding_Sequence",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "new-employee",
+                "options": {}
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "email": "{{$json[\"body\"][\"email\"]}}",
+                "channelIds": [
+                    "general"
+                ]
+            },
+            "name": "Slack Invite",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "email": "{{$json[\"body\"][\"email\"]}}",
+                "firstname": "{{$json[\"body\"][\"first\"]}}",
+                "lastname": "{{$json[\"body\"][\"last\"]}}"
+            },
+            "name": "Google Workspace User",
+            "type": "n8n-nodes-base.googleContacts",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Invite",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Slack Invite": {
+            "main": [
+                [
+                    {
+                        "node": "Google Workspace User",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

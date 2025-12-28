@@ -1,0 +1,87 @@
+{
+    "name": "50_Google_Analytics_Report",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "weeksInterval": 1
+                        }
+                    ]
+                }
+            },
+            "name": "Weekly Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "viewId": "123456",
+                "metrics": [
+                    "ga:users",
+                    "ga:pageviews"
+                ],
+                "dimensions": [
+                    "ga:date"
+                ],
+                "dateRanges": [
+                    {
+                        "startDate": "7daysAgo",
+                        "endDate": "today"
+                    }
+                ]
+            },
+            "name": "Google Analytics",
+            "type": "n8n-nodes-base.googleAnalytics",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "toEmail": "boss@company.com",
+                "subject": "Weekly Web Analytics",
+                "text": "Here are the stats: {{$json}}"
+            },
+            "name": "Send Email",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Weekly Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Google Analytics",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Analytics": {
+            "main": [
+                [
+                    {
+                        "node": "Send Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

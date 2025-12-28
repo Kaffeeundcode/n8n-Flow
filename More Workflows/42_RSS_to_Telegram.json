@@ -1,0 +1,43 @@
+{
+    "name": "42_RSS_to_Telegram",
+    "nodes": [
+        {
+            "parameters": {
+                "url": "https://feeds.feedburner.com/TechCrunch/"
+            },
+            "name": "RSS Feed Read",
+            "type": "n8n-nodes-base.rssFeedRead",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "@my_channel",
+                "text": "New Article: {{$json[\"title\"]}}\n{{$json[\"link\"]}}"
+            },
+            "name": "Telegram",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "RSS Feed Read": {
+            "main": [
+                [
+                    {
+                        "node": "Telegram",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

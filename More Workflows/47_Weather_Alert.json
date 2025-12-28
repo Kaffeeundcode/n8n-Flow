@@ -1,0 +1,105 @@
+{
+    "name": "47_Weather_Alert",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 24
+                        }
+                    ]
+                },
+                "triggerAtHour": 7
+            },
+            "name": "Morning Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "cityName": "Berlin",
+                "language": "de"
+            },
+            "name": "OpenWeatherMap",
+            "type": "n8n-nodes-base.openWeatherMap",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{$json[\"weather\"][0][\"main\"]}}",
+                            "value2": "Rain"
+                        }
+                    ]
+                }
+            },
+            "name": "IF Rain",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "@my_channel",
+                "text": "It's going to rain today! Bring an umbrella."
+            },
+            "name": "Telegram",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                850,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "Morning Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "OpenWeatherMap",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenWeatherMap": {
+            "main": [
+                [
+                    {
+                        "node": "IF Rain",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF Rain": {
+            "main": [
+                [
+                    {
+                        "node": "Telegram",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

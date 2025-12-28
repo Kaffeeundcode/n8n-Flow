@@ -1,0 +1,45 @@
+{
+    "name": "41_YouTube_to_Discord",
+    "nodes": [
+        {
+            "parameters": {
+                "channelId": "UCxxxxxxxx",
+                "events": [
+                    "video.upload"
+                ]
+            },
+            "name": "YouTube Trigger",
+            "type": "n8n-nodes-base.youtubeTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "content": "New Video Posted: {{$json[\"title\"]}}\nLink: {{$json[\"url\"]}}"
+            },
+            "name": "Discord",
+            "type": "n8n-nodes-base.discord",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "YouTube Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Discord",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

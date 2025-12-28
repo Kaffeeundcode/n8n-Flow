@@ -1,0 +1,44 @@
+{
+    "name": "43_WooCommerce_to_Sheets",
+    "nodes": [
+        {
+            "parameters": {
+                "event": "order.created"
+            },
+            "name": "WooCommerce Trigger",
+            "type": "n8n-nodes-base.wooCommerceTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "sheetId": "1A2B3C...",
+                "range": "A:E",
+                "options": {}
+            },
+            "name": "Google Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "WooCommerce Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Google Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

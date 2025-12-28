@@ -1,0 +1,78 @@
+{
+    "name": "56_GitHub_PR_Reminder",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 24
+                        }
+                    ]
+                }
+            },
+            "name": "Daily Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "owner": "my-org",
+                "repository": "my-repo",
+                "filters": {
+                    "state": "open"
+                }
+            },
+            "name": "GitHub List PRs",
+            "type": "n8n-nodes-base.github",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "channelId": "dev-channel",
+                "text": "Open PR: {{$json[\"title\"]}} - {{$json[\"html_url\"]}}"
+            },
+            "name": "Slack Notify",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Daily Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "GitHub List PRs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GitHub List PRs": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Notify",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

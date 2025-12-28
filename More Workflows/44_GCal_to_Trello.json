@@ -1,0 +1,54 @@
+{
+    "name": "44_GCal_to_Trello",
+    "nodes": [
+        {
+            "parameters": {
+                "pollTimes": {
+                    "item": [
+                        {
+                            "mode": "everyMinute"
+                        }
+                    ]
+                },
+                "calendarId": "primary",
+                "events": [
+                    "eventCreated"
+                ]
+            },
+            "name": "Google Calendar Trigger",
+            "type": "n8n-nodes-base.googleCalendarTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "listId": "abc12345",
+                "name": "Meeting: {{$json[\"summary\"]}}",
+                "description": "{{$json[\"description\"]}}"
+            },
+            "name": "Trello",
+            "type": "n8n-nodes-base.trello",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Google Calendar Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Trello",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

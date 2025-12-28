@@ -1,0 +1,91 @@
+{
+    "name": "49_Slack_to_Notion",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message.reaction_added"
+                ]
+            },
+            "name": "Slack Trigger",
+            "type": "n8n-nodes-base.slackTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{$json[\"reaction\"]}}",
+                            "value2": "floppy_disk"
+                        }
+                    ]
+                }
+            },
+            "name": "IF Save Emoji",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "databasePage",
+                "databaseId": "DATABASE_ID",
+                "properties": {
+                    "ui": {
+                        "property": [
+                            {
+                                "key": "Name",
+                                "title": "Slack Message",
+                                "type": "title"
+                            },
+                            {
+                                "key": "Content",
+                                "rich_text": "={{$json[\"item\"][\"item_name\"]}}",
+                                "type": "rich_text"
+                            }
+                        ]
+                    }
+                }
+            },
+            "name": "Create Notion Page",
+            "type": "n8n-nodes-base.notion",
+            "typeVersion": 1,
+            "position": [
+                650,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "Slack Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "IF Save Emoji",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF Save Emoji": {
+            "main": [
+                [
+                    {
+                        "node": "Create Notion Page",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

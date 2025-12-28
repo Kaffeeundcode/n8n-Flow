@@ -1,0 +1,74 @@
+{
+    "name": "55_Server_Health_Webhook",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "server-alert",
+                "options": {}
+            },
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{$json[\"body\"][\"status\"]}}",
+                            "value2": "down"
+                        }
+                    ]
+                }
+            },
+            "name": "IF Down",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "email": "oncall@company.com",
+                "message": "Server is DOWN! Payload: {{$json[\"body\"]}}"
+            },
+            "name": "PagerDuty",
+            "type": "n8n-nodes-base.pagerDuty",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "IF Down",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF Down": {
+            "main": [
+                [
+                    {
+                        "node": "PagerDuty",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
